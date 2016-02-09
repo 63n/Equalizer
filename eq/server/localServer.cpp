@@ -57,18 +57,17 @@ public:
 protected:
 
     void run() final
-        {
-            _server->run();
-            _server->close();
-            _server->deleteConfigs();
+    {
+        _server->run();
+        _server->close();
+        _server->deleteConfigs();
 
-            LBINFO << "Server thread done, still referenced by "
-                   << _server->getRefCount() - 1 << std::endl;
-
-            LBASSERTINFO( _server->getRefCount() == 1, _server );
-            _server = 0;
-            eq::server::Global::clear();
-        }
+        LBASSERTINFO( _server->getRefCount() == 1,
+                      "Server thread done, still referenced by " <<
+                      _server->getRefCount( ));
+        _server = 0;
+        eq::server::Global::clear();
+    }
 
 private:
     eq::server::ServerPtr _server;
@@ -90,13 +89,15 @@ bool startLocalServer( const std::string& config )
 
     if( config.length() > 3 && config.find( ".eqc" ) == config.length() - 4 )
         server = loader.loadFile( config );
-#ifdef EQUALIZER_USE_HWSD
     else
+    {
+#ifdef EQUALIZER_USE_HWSD
         server = new eq::server::Server; // configured upon Server::chooseConfig
-#endif
-
-    if( !server )
+#else
         server = loader.parseServer( CONFIG );
+#endif
+    }
+
     if( !server )
     {
         LBERROR << "Failed to load configuration" << std::endl;

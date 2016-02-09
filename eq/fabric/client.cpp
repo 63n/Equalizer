@@ -1,6 +1,6 @@
 
-/* Copyright (c) 2010-2012, Stefan Eilemann <eile@eyescale.ch>
- *                    2012, Daniel Nachbaur <danielnachbaur@gmail.com>
+/* Copyright (c) 2010-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -54,31 +54,27 @@ bool Client::connectServer( co::NodePtr server )
     if( server->isConnected( ))
         return true;
 
-    co::ConnectionDescriptionPtr connDesc;
-    if( server->getConnectionDescriptions().empty( ))
+    if( !server->getConnectionDescriptions().empty( ))
+        return connect( server );
+
+    co::ConnectionDescriptionPtr connDesc( new co::ConnectionDescription );
+    connDesc->port = EQ_DEFAULT_PORT;
+    const std::string& globalServer = Global::getServer();
+    const char* envServer = getenv( "EQ_SERVER" );
+    std::string address = !globalServer.empty() ? globalServer :
+                           envServer            ? envServer : "localhost";
+    if( !connDesc->fromString( address ))
     {
-        connDesc = new co::ConnectionDescription;
-        connDesc->port = EQ_DEFAULT_PORT;
-
-        const std::string globalServer = Global::getServer();
-        const char* envServer = getenv( "EQ_SERVER" );
-        std::string address = !globalServer.empty() ? globalServer :
-                               envServer            ? envServer : "localhost";
-
-        if( !connDesc->fromString( address ))
-            LBWARN << "Can't parse server address " << address << std::endl;
-        LBASSERT( address.empty( ));
-        LBINFO << "Connecting server " << connDesc->toString() << std::endl;
-
-        server->addConnectionDescription( connDesc );
+        LBWARN << "Can't parse server address " << address << std::endl;
+        return false;
     }
+    LBDEBUG << "Connecting server " << connDesc->toString() << std::endl;
+    server->addConnectionDescription( connDesc );
 
     if( connect( server ))
         return true;
 
-    if( connDesc ) // clean up
-        server->removeConnectionDescription( connDesc );
-
+    server->removeConnectionDescription( connDesc );
     return false;
 }
 
@@ -90,7 +86,7 @@ bool Client::disconnectServer( co::NodePtr server )
         return false;
     }
 
-    if( co::LocalNode::disconnect( server ))
+    if( disconnect( server ))
         return true;
 
     LBWARN << "Server disconnect failed" << std::endl;
@@ -102,7 +98,7 @@ void Client::processCommand( const uint32_t timeout )
     co::CommandQueue* queue = getMainThreadQueue();
     LBASSERT( queue );
     co::ICommand command = queue->pop( timeout );
-    if( !command.isValid( )) // just a wakeup()
+    if( !command.isValid( )) // wakeup() or timeout delivers invalid command
         return;
 
     LBCHECK( command( ));

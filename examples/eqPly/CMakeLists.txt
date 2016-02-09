@@ -7,6 +7,11 @@ endif(MSVC)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+set(EQPLY_LINK_LIBRARIES EqualizerAdmin triply)
+if(EQ_QT_USED)
+  list(APPEND EQPLY_LINK_LIBRARIES Qt5::Widgets ${X11_LIBRARIES})
+endif()
+
 eq_add_example(eqPly
   HEADERS
     cameraAnimation.h
@@ -43,26 +48,23 @@ eq_add_example(eqPly
     vertexShader.glsl
     fragmentShader.glsl
   LINK_LIBRARIES
-    ${EQUALIZER_ADMIN_LIBRARY} triply ${QT_LIBRARIES}
+    ${EQPLY_LINK_LIBRARIES}
   )
 
-file(COPY logo.rgb DESTINATION ${PROJECT_BINARY_DIR}/share/Equalizer/data)
+file(COPY logo.rgb DESTINATION ${CMAKE_BINARY_DIR}/share/Equalizer/data)
 install(FILES logo.rgb DESTINATION share/Equalizer/data COMPONENT apps)
-
-if(MSVC) # the custom command below doesn't work on VS
-  return()
-endif()
 
 # create and install .bin files
 function(INSTALL_PLY IN OUT) # + command
   set(BIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${OUT}")
-  add_custom_target(${OUT} ALL
+  add_custom_command(OUTPUT ${BIN_FILE}
     COMMAND ${ARGN} "${CMAKE_CURRENT_SOURCE_DIR}/${IN}"
     COMMAND ${CMAKE_COMMAND} -E copy ${BIN_FILE}
-                                     ${PROJECT_BINARY_DIR}/share/Equalizer/data
+                                     ${CMAKE_BINARY_DIR}/share/Equalizer/data
     DEPENDS "${IN}" eqPlyConverter
-    COMMENT "Creating eqPly kd-Tree for ${IN}"
+    COMMENT "Creating kd-Tree for ${IN}"
     )
+  add_custom_target(${OUT} ALL DEPENDS ${BIN_FILE})
   install(FILES ${OUT} DESTINATION share/Equalizer/data COMPONENT apps)
 endfunction()
 
@@ -85,7 +87,7 @@ foreach(PLY_FILE ${PLY_FILES})
           arch -${ARCH} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/eqPlyConverter")
       endforeach()
     endif()
-  else()
+  elseif(NOT MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(BIN_POSTFIX "64.bin")
     else()
@@ -99,6 +101,6 @@ foreach(PLY_FILE ${PLY_FILES})
     install_ply("${PLY_FILE}" "${PLY_FILE}.${BIN_POSTFIX}"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/eqPlyConverter")
   endif()
-  file(COPY ${PLY_FILE} DESTINATION ${PROJECT_BINARY_DIR}/share/Equalizer/data)
+  file(COPY ${PLY_FILE} DESTINATION ${CMAKE_BINARY_DIR}/share/Equalizer/data)
   install(FILES ${PLY_FILE} DESTINATION share/Equalizer/data COMPONENT apps)
 endforeach()

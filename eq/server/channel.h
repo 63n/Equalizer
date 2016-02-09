@@ -19,7 +19,7 @@
 #ifndef EQSERVER_CHANNEL_H
 #define EQSERVER_CHANNEL_H
 
-#include "api.h"
+#include <eq/server/api.h>
 #include "state.h"  // enum
 #include "types.h"
 
@@ -35,13 +35,11 @@ namespace eq
 {
 namespace server
 {
-class ChannelListener;
-
 class Channel : public fabric::Channel< Window, Channel >
 {
 public:
     /** Construct a new channel. */
-    EQSERVER_API Channel( Window* parent );
+    EQSERVER_API explicit Channel( Window* parent );
 
     /** Construct a copy of a channel. */
     Channel( const Channel& from );

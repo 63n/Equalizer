@@ -3,7 +3,7 @@ This file lists all changes in the public Equalizer API, latest on top:
 
 -----------------------------------2.0-------------------------------------
 [18c2fa8] Fixed error reporting
-* Config::update() reports false on failing resource, indepentently of
+* Config::update() reports false on failing resource, independently of
   robustness
 * New function Config::getErrors() to get last errors
 * Error class is serializable and contains optional originator ID
@@ -166,7 +166,6 @@ To port, replace:
 
 7/Jan/2011
   Rename EVENT_POINTER_* to differantiate channel and window pointer events.
-  Old values can be used when EQ_USE_DEPRECATED is defined.
 
      CHANNEL_POINTER_MOTION         // = POINTER_MOTION
      CHANNEL_POINTER_BUTTON_PRESS   // = POINTER_BUTTON_PRESS
@@ -183,8 +182,7 @@ To port, replace:
 
 20/Dec/2010
   Renamed the eq::net namespace to co(llage). Change all prefixes from
-  eq::net to co or use EQ_USE_DEPRECATED to declare an 'eq::net'
-  namespace alias.
+  eq::net to co.
 
 14/Dec/2010
   Removed net::Session. Use net::LocalNode or eq::Config of object

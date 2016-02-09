@@ -47,47 +47,45 @@ public:
         , _channel( 0 )
     {}
 
-    virtual ~VertexBufferState() {};
+    virtual ~VertexBufferState() {}
 
-    virtual GLuint getDisplayList( const void* key )
+    GLuint getDisplayList( const void* key ) override
         { return _objectManager.getList( key ); }
 
-    virtual GLuint newDisplayList( const void* key )
+    GLuint newDisplayList( const void* key ) override
         { return _objectManager.newList( key ); }
 
-    virtual GLuint getTexture( const void* key )
-        { return _objectManager.getTexture( key ); }
-
-    virtual GLuint newTexture( const void* key )
-        { return _objectManager.newTexture( key ); }
-
-    virtual GLuint getBufferObject( const void* key )
+    GLuint getBufferObject( const void* key ) override
         { return _objectManager.getBuffer( key ); }
 
-    virtual GLuint newBufferObject( const void* key )
+    GLuint newBufferObject( const void* key ) override
         { return _objectManager.newBuffer( key ); }
 
-    virtual GLuint getProgram( const void* key )
+    void deleteAll()  override
+        { _objectManager.deleteAll(); }
+
+    GLuint getProgram( const void* key )
         { return _objectManager.getProgram( key ); }
 
-    virtual GLuint newProgram( const void* key )
+    GLuint newProgram( const void* key )
         { return _objectManager.newProgram( key ); }
 
-    virtual GLuint getShader( const void* key )
-        { return _objectManager.getShader( key ); }
+    bool linkProgram( const unsigned program, const char* vertexShaderSource,
+                      const char* fragmentShaderSource )
+    {
+        return eq::util::shader::linkProgram( _objectManager.glewGetContext(),
+                                              program, vertexShaderSource,
+                                              fragmentShaderSource );
+    }
 
-    virtual GLuint newShader( const void* key, GLenum type )
-        { return _objectManager.newShader( key, type ); }
-
-    virtual void deleteAll() { _objectManager.deleteAll(); }
     bool isShared() const { return _objectManager.isShared(); }
 
     void setChannel( Channel* channel ) { _channel = channel; }
 
-    virtual bool stopRendering( ) const
+    bool stopRendering( ) const override
         { return _channel ? _channel->stopRendering() : false; }
 
-    virtual void declareRegion( const triply::Vector4f& region )
+    void declareRegion( const triply::Vector4f& region ) override
         { if( _channel ) _channel->declareRegion( eq::Viewport( region )); }
 
 private:

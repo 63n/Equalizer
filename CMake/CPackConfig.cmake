@@ -4,9 +4,7 @@
 #info: http://www.itk.org/Wiki/CMake:Component_Install_With_CPack
 
 set(CPACK_PACKAGE_VENDOR "www.eyescale.ch")
-set(CPACK_PACKAGE_CONTACT "Stefan Eilemann <eile@eyescale.ch>")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Parallel Rendering Framework")
-set(CPACK_PACKAGE_DESCRIPTION_FILE ${PROJECT_SOURCE_DIR}/doc/RelNotes.md)
+set(CPACK_PACKAGE_DESCRIPTION_FILE ${PROJECT_SOURCE_DIR}/doc/Changelog.md)
 set(CPACK_RESOURCE_FILE_README ${CPACK_PACKAGE_DESCRIPTION_FILE})
 
 set(EQ_IB_PACKAGES "librdmacm-dev, libibverbs-dev, librdmacm-dev")
@@ -21,11 +19,6 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, libboost-system-dev, libboost-date
 
 set(CPACK_MACPORTS_CATEGORY graphics)
 set(CPACK_MACPORTS_DEPENDS boost hwsd GLStats Collage Lunchbox VMMLIB)
-
-string(REPLACE ";" " " CPACK_PACKAGE_CONFIG_REQUIRES
-  "${${UPPER_PROJECT_NAME}_DEPENDENT_LIBRARIES}")
-string(REPLACE "GLEW_MX" "glewmx" CPACK_PACKAGE_CONFIG_REQUIRES
-  ${CPACK_PACKAGE_CONFIG_REQUIRES})
 
 set(UBUNTU_LP_BUG 300472)
 include(CommonCPack)

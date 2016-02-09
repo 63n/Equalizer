@@ -165,11 +165,6 @@ bool VertexData::readPlyFile( const std::string& filename )
     }
     PLYLIBASSERT( elemNames != 0 );
 
-    #ifndef NDEBUG
-    PLYLIBINFO << filename << ": " << nPlyElems << " elements, file type = "
-             << fileType << ", version = " << version << std::endl;
-    #endif
-
     for( int i = 0; i < nPlyElems; ++i )
     {
         int nElems;
@@ -178,17 +173,6 @@ bool VertexData::readPlyFile( const std::string& filename )
         PlyProperty** props = ply_get_element_description( file, elemNames[i],
                                                            &nElems, &nProps );
         PLYLIBASSERT( props != 0 );
-
-        #ifndef NDEBUG
-        PLYLIBINFO << "element " << i << ": name = " << elemNames[i] << ", "
-                 << nProps << " properties, " << nElems << " elements"
-                 << std::endl;
-        for( int j = 0; j < nProps; ++j )
-        {
-            PLYLIBINFO << "element " << i << ", property " << j << ": "
-                     << "name = " << props[j]->name << std::endl;
-        }
-        #endif
 
         if( equal_strings( elemNames[i], "vertex" ) )
         {
@@ -259,8 +243,8 @@ void VertexData::calculateNormals()
         const Index i0 = triangles[i][0];
         const Index i1 = triangles[i][1];
         const Index i2 = triangles[i][2];
-        const Normal normal = vertices[i0].compute_normal( vertices[i1],
-                                                           vertices[i2] );
+        const Normal normal = vmml::compute_normal( vertices[i0], vertices[i1],
+                                                    vertices[i2] );
 #ifndef NDEBUG
         // count emtpy normals in debug mode
         if( normal.length() == 0.0f )

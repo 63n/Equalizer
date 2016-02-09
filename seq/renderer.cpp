@@ -1,5 +1,7 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Petros Kataras <petroskataras@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -19,7 +21,9 @@
 
 #include "application.h"
 #include "viewData.h"
+#include "detail/objectMap.h"
 #include "detail/renderer.h"
+#include "detail/window.h"
 
 namespace seq
 {
@@ -37,6 +41,16 @@ Renderer::~Renderer()
 co::Object* Renderer::getFrameData()
 {
     return _impl->getFrameData();
+}
+
+const ObjectManager& Renderer::getObjectManager() const
+{
+    return _impl->getObjectManager();
+}
+
+ObjectManager& Renderer::getObjectManager()
+{
+    return _impl->getObjectManager();
 }
 
 const GLEWContext* Renderer::glewGetContext() const
@@ -69,6 +83,17 @@ const Matrix4f& Renderer::getModelMatrix() const
     return _impl->getModelMatrix();
 }
 
+const PixelViewport& Renderer::getPixelViewport() const
+{
+    return _impl->getPixelViewport();
+}
+
+uint32_t Renderer::getWindowID() const
+{
+    const eq::Window* window = _impl->getWindow();
+    return window ? window->getSerial() : CO_INSTANCE_INVALID;
+}
+
 bool Renderer::initContext( co::Object* /*initData*/ )
 {
     return _impl->initContext();
@@ -97,7 +122,7 @@ void Renderer::updateNearFar( const Vector4f& boundingSphere )
     front *= boundingSphere.w();
 
     const Vector3f& translation = getModelMatrix().get_translation();
-    const Vector3f& center = translation - boundingSphere.get_sub_vector< 3 >();
+    const Vector3f& center = translation - boundingSphere.get_sub_vector<3>();
     const Vector3f& nearPoint  = view * ( center - front );
     const Vector3f& farPoint   = view * ( center + front );
 
@@ -144,6 +169,16 @@ void Renderer::applyModelMatrix()
     _impl->applyModelMatrix();
 }
 
+void Renderer::applyScreenFrustum()
+{
+    _impl->applyScreenFrustum();
+}
+
+void Renderer::applyPerspectiveFrustum()
+{
+    _impl->applyPerspectiveFrustum();
+}
+
 co::Object* Renderer::createObject( const uint32_t type )
 {
     return app_.createObject( type );
@@ -153,4 +188,17 @@ void Renderer::destroyObject( co::Object* object, const uint32_t type )
 {
     app_.destroyObject( object, type );
 }
+
+co::Object* Renderer::mapObject( const uint128_t& identifier,
+                                 co::Object* instance )
+{
+   return _impl->mapObject( identifier, instance );
+}
+
+bool Renderer::unmap( co::Object* object )
+{
+   return _impl->unmap( object );
+}
+
+
 }

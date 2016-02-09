@@ -39,8 +39,11 @@ using vmml::Matrix3d; //!< A 3x3 double matrix
 using vmml::Matrix4d; //!< A 4x4 double matrix
 using vmml::Matrix3f; //!< A 3x3 float matrix
 using vmml::Matrix4f; //!< A 4x4 float matrix
+using vmml::Vector2ui; //!< A two-component unsigned integer vector
 using vmml::Vector2i; //!< A two-component integer vector
+using vmml::Vector3ui; //!< A three-component unsigned integer vector
 using vmml::Vector3i; //!< A three-component integer vector
+using vmml::Vector4ui; //!< A four-component unsigned integer vector
 using vmml::Vector4i; //!< A four-component integer vector
 using vmml::Vector3d; //!< A three-component double vector
 using vmml::Vector4d; //!< A four-component double vector
@@ -56,6 +59,12 @@ using vmml::AABBf; //!< axis-aligned bounding box
 
 namespace lunchbox
 {
+template<> inline void byteswap( eq::fabric::Vector2ui& value )
+{
+    byteswap( value.x( ));
+    byteswap( value.y( ));
+}
+
 template<> inline void byteswap( eq::fabric::Vector2i& value )
 {
     byteswap( value.x( ));
@@ -76,6 +85,14 @@ template<> inline void byteswap( eq::fabric::Vector3f& value )
 }
 
 template<> inline void byteswap( eq::fabric::Vector4f& value )
+{
+    byteswap( value.x( ));
+    byteswap( value.y( ));
+    byteswap( value.z( ));
+    byteswap( value.w( ));
+}
+
+template<> inline void byteswap( eq::fabric::Vector4ui& value )
 {
     byteswap( value.x( ));
     byteswap( value.y( ));

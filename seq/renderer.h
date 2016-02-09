@@ -1,5 +1,7 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Petros Kataras <petroskataras@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -33,7 +35,7 @@ class Renderer : public co::ObjectFactory
 {
 public:
     /** Construct a new renderer. @version 1.0 */
-    SEQ_API Renderer( Application& application );
+    SEQ_API explicit Renderer( Application& application );
 
     /** Destruct this renderer. @version 1.0 */
     SEQ_API virtual ~Renderer();
@@ -150,18 +152,51 @@ public:
      * @version 1.0
      */
     SEQ_API virtual void applyModelMatrix();
+
+    /**
+     * Apply an orthographic frustum for pixel-based 2D operations.
+     *
+     * One unit of the frustum covers one pixel on screen. The frustum is
+     * positioned relative to the eq::View.
+     * @version 1.8
+     */
+    SEQ_API virtual void applyScreenFrustum();
+
+    /**
+     * Apply the perspective frustum matrix for the current rendering task.
+     * @version 1.8
+     */
+    SEQ_API virtual void applyPerspectiveFrustum();
+
+    /**
+     * @warning experimental
+     * @return true when the event was handled, false if not.
+    */
+    SEQ_API virtual bool processEvent( const eq::Event& ) { return false; }
     //@}
 
     /** @name Data Access */
     //@{
     detail::Renderer* getImpl() { return _impl; } //!< @internal
-    co::Object* getFrameData(); // @warning experimental
+
+    /**
+     * @return A frame-synchronous instance of the data passed to
+     *         Application::run().
+     * @version 1.8
+     */
+    SEQ_API co::Object* getFrameData();
 
     /** @return the application instance for this renderer. @version 1.0 */
     Application& getApplication() { return app_; }
 
     /** @return the application instance for this renderer. @version 1.0 */
     const Application& getApplication() const { return app_; }
+
+    /** @return the object manager of this renderer. @version 1.0 */
+    SEQ_API const ObjectManager& getObjectManager() const;
+
+    /** @return the object manager of this renderer. @version 1.0 */
+    SEQ_API ObjectManager& getObjectManager();
 
     /**
      * Create a new per-view data instance.
@@ -201,13 +236,47 @@ public:
 
     /** @return the current model (scene) transformation. @version 1.0 */
     SEQ_API const Matrix4f& getModelMatrix() const;
+
+    /** @return the current rendering area. @version 1.8 */
+    SEQ_API const PixelViewport& getPixelViewport() const;
+
+    /**
+     * @return a unique, stable identifier for the current window.
+     * @version 1.8
+     */
+    SEQ_API uint32_t getWindowID() const;
     //@}
 
-    /** @name ObjectFactory interface, forwards to Application instance. */
+    /** @name Distributed Object API */
     //@{
+    /** @sa seq::Application::createObject() */
     SEQ_API virtual co::Object* createObject( const uint32_t type );
+
+    /** @sa seq::Application::destroyObject() */
     SEQ_API virtual void destroyObject( co::Object* object,
                                         const uint32_t type );
+
+    /**
+     * Map and return an object.
+     *
+     * @param identifier unique object identifier used for map operation
+     * @param instance already created instance to skip factory creation
+     * @return 0 if not registered, the valid instance otherwise
+     * @version 1.8
+     * @sa co::ObjectMap::map()
+     */
+    SEQ_API co::Object* mapObject( const uint128_t& identifier,
+                                   co::Object* instance );
+
+    /**
+     * Unmap an object from the object map.
+     *
+     * @param object the object to unmap
+     * @return false on if object was not mapped, true otherwise
+     * @version 1.0
+     * @sa co::ObjectMap::unmap()
+     */
+    SEQ_API bool unmap( co::Object* object );
     //@}
 
 private:

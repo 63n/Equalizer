@@ -1,8 +1,8 @@
 
-/* Copyright (c) 2006-2014, Stefan Eilemann <eile@equalizergraphics.com>
- *               2011-2012, Daniel Nachbaur <danielnachbaur@gmail.com>
- *                    2010, Cedric Stalder <cedric.stalder@gmail.com>
- *                    2007, Tobias Wolf <twolf@access.unizh.ch>
+/* Copyright (c) 2006-2015, Stefan Eilemann <eile@equalizergraphics.com>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Cedric Stalder <cedric.stalder@gmail.com>
+ *                          Tobias Wolf <twolf@access.unizh.ch>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -349,7 +349,6 @@ void Channel::frameViewFinish( const eq::uint128_t& frameID )
         }
     }
 
-    applyViewport();
     _drawOverlay();
     _drawHelp();
 
@@ -610,7 +609,7 @@ void Channel::_drawModel( const Model* scene )
     const eq::Matrix4f model = rotation * position * modelRotation;
 
     state.setProjectionModelViewMatrix( projection * view * model );
-    state.setRange( &getRange().start);
+    state.setRange( triply::Range( &getRange().start ));
 
     const eq::Pipe* pipe = getPipe();
     const GLuint program = state.getProgram( pipe );
@@ -644,28 +643,21 @@ void Channel::_drawOverlay()
     if( !texture )
         return;
 
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    applyScreenFrustum();
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity();
-
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_LIGHTING );
-    glColor3f( 1.0f, 1.0f, 1.0f );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    applyOverlayState();
+    EQ_GL_CALL( glDisable( GL_COLOR_LOGIC_OP ));
+    EQ_GL_CALL( glPolygonMode( GL_FRONT_AND_BACK, GL_FILL ));
 
     // logo
-    glEnable( GL_BLEND );
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    EQ_GL_CALL( glEnable( GL_BLEND ));
+    EQ_GL_CALL( glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ));
     const GLenum target = texture->getTarget();
-    glEnable( target );
+    EQ_GL_CALL( glEnable( target ));
     texture->bind();
-    glTexParameteri( target, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( target, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    EQ_GL_CALL( glTexParameteri( target, GL_TEXTURE_MAG_FILTER, GL_LINEAR ));
+    EQ_GL_CALL( glTexParameteri( target, GL_TEXTURE_MIN_FILTER, GL_LINEAR ));
 
-    const float tWidth = float( texture->getWidth( ) );
-    const float tHeight = float( texture->getHeight( ) );
+    const float tWidth = float( texture->getWidth( ));
+    const float tHeight = float( texture->getHeight( ));
 
     const float width = target == GL_TEXTURE_2D ? 1.0f : tWidth;
     const float height = target == GL_TEXTURE_2D ? 1.0f : tHeight;
@@ -685,10 +677,9 @@ void Channel::_drawOverlay()
 
     } glEnd();
 
-    glDisable( target );
-    glDisable( GL_BLEND );
-    glEnable( GL_LIGHTING );
-    glEnable( GL_DEPTH_TEST );
+    EQ_GL_CALL( glDisable( target ));
+    EQ_GL_CALL( glDisable( GL_BLEND ));
+    resetOverlayState();
 }
 
 void Channel::_drawHelp()
@@ -699,16 +690,7 @@ void Channel::_drawHelp()
     if( !frameData.showHelp() && message.empty( ))
         return;
 
-    applyBuffer();
-    applyViewport();
-    setupAssemblyState();
-
-    glLogicOp( GL_XOR );
-    glEnable( GL_COLOR_LOGIC_OP );
-    glDisable( GL_LIGHTING );
-    glDisable( GL_DEPTH_TEST );
-
-    glColor3f( 1.f, 1.f, 1.f );
+    applyOverlayState();
 
     const eq::PixelViewport& pvp = getPixelViewport();
     const eq::Viewport& vp = getViewport();
@@ -738,11 +720,6 @@ void Channel::_drawHelp()
         font->draw( message );
     }
 
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    applyScreenFrustum();
-    glMatrixMode( GL_MODELVIEW );
-
     if( frameData.showHelp( ))
     {
         const eq::util::BitmapFont* font = getWindow()->getSmallFont();
@@ -762,8 +739,7 @@ void Channel::_drawHelp()
         glRasterPos3f( 10.f, y, 0.99f );
         font->draw( help );
     }
-
-    resetAssemblyState();
+    resetOverlayState();
 }
 
 void Channel::_updateNearFar( const triply::BoundingSphere& boundingSphere )
@@ -799,13 +775,13 @@ void Channel::_updateNearFar( const triply::BoundingSphere& boundingSphere )
     {
         // estimate minimal value of near plane based on frustum size
         const eq::Frustumf& frustum = getFrustum();
-        const float width  = fabs( frustum.right() - frustum.left() );
-        const float height = fabs( frustum.top() - frustum.bottom() );
-        const float size   = LB_MIN( width, height );
-        const float minNear = frustum.near_plane() / size * .001f;
+        const float width  = std::fabs( frustum.right() - frustum.left() );
+        const float height = std::fabs( frustum.top() - frustum.bottom() );
+        const float size   = std::min( width, height );
+        const float minNear = std::fabs( frustum.near_plane() / size * .001f );
 
-        const float zNear = LB_MAX( minNear, -nearPoint.z() );
-        const float zFar  = LB_MAX( zNear * 2.f, -farPoint.z() );
+        const float zNear = std::max( minNear, -nearPoint.z() );
+        const float zFar  = std::max( zNear * 2.f, -farPoint.z() );
 
         setNearFar( zNear, zFar );
     }

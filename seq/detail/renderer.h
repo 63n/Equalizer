@@ -1,5 +1,7 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Petros Kataras <petroskataras@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -24,51 +26,66 @@ namespace seq
 {
 namespace detail
 {
-    /** The internal implementation for the renderer. */
-    class Renderer
-    {
-    public:
-        Renderer();
-        ~Renderer();
+/** The internal implementation for the renderer. */
+class Renderer
+{
+public:
+    Renderer();
+    ~Renderer();
 
-        /** @name Data Access. */
-        //@{
-        co::Object* getFrameData();
-        const GLEWContext* glewGetContext() const { return _glewContext; }
+    /** @name Data Access. */
+    //@{
+    co::Object* getFrameData();
+    const GLEWContext* glewGetContext() const { return _glewContext; }
 
-        const Frustumf& getFrustum() const;
-        const Matrix4f& getViewMatrix() const;
-        const Matrix4f& getModelMatrix() const;
+    const ObjectManager& getObjectManager() const;
+    ObjectManager& getObjectManager();
 
-        bool useOrtho() const;
-        void setNearFar( const float nearPlane, const float farPlane );
-        //@}
+    const RenderContext& getRenderContext() const;
+    const Frustumf& getFrustum() const;
+    const Matrix4f& getViewMatrix() const;
+    const Matrix4f& getModelMatrix() const;
+    const PixelViewport& getPixelViewport() const;
 
-        /** @name Current context. */
-        //@{
-        void setPipe( Pipe* pipe ) { _pipe = pipe; }
-        void setWindow( Window* window );
-        void setChannel( Channel* channel );
-        //@}
+    bool useOrtho() const;
+    void setNearFar( const float nearPlane, const float farPlane );
+    //@}
 
-        /** @name Operations. */
-        //@{
-        bool initContext();
-        bool exitContext();
+    /** @name Current context. */
+    //@{
+    void setPipe( Pipe* pipe ) { _pipe = pipe; }
+    void setWindow( Window* window );
+    void setChannel( Channel* channel );
 
-        void clear();
+    const Window* getWindow() const { return _window; }
+    //@}
 
-        void applyRenderContext();
-        const RenderContext& getRenderContext() const;
-        void applyModelMatrix();
-        //@}
+    /** @name Operations. */
+    //@{
+    bool initContext();
+    bool exitContext();
 
-    private:
-        const GLEWContext* _glewContext;
-        Pipe* _pipe;
-        Window* _window;
-        Channel* _channel;
-    };
+    void clear();
+
+    void applyRenderContext();
+    void applyModelMatrix();
+
+    void applyScreenFrustum();
+    void applyPerspectiveFrustum();
+    //@}
+
+    /** @name Distributed Object API. */
+    //@{
+    co::Object* mapObject( const uint128_t& identifier,
+                           co::Object* instance = 0 );
+    bool unmap( co::Object* object );
+
+private:
+    const GLEWContext* _glewContext;
+    Pipe* _pipe;
+    Window* _window;
+    Channel* _channel;
+};
 }
 }
 

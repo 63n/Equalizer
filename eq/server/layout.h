@@ -18,7 +18,7 @@
 #ifndef EQSERVER_LAYOUT_H
 #define EQSERVER_LAYOUT_H
 
-#include "api.h"
+#include <eq/server/api.h>
 #include "visitorResult.h" // enum
 #include "types.h"
 
@@ -38,7 +38,7 @@ class Layout : public fabric::Layout< Config, Layout, View >
 {
 public:
     /** Construct a new Layout. */
-    EQSERVER_API Layout( Config* parent );
+    EQSERVER_API explicit Layout( Config* parent );
 
     /** Destruct this layout. */
     virtual ~Layout();

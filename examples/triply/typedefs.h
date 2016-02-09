@@ -34,7 +34,7 @@
 #ifndef PLYLIB_TYPEDEFS_H
 #define PLYLIB_TYPEDEFS_H
 
-#if defined(EQ_DEFINES_H) || defined(EQUALIZER_VERSION)
+#ifdef EQUALIZER_USE_OPENGL
 #  define EQUALIZER
 #endif
 
@@ -45,6 +45,7 @@
 #  define PLYLIBWARN    LBWARN
 #  define PLYLIBINFO    LBINFO
 #else
+#  include <GL/glew.h>
 #  include <vmmlib/vmmlib.hpp>
 #  ifdef _WIN32
 #    include <Winsock2.h>
@@ -62,6 +63,7 @@
 #  define PLYLIBINFO    std::cout
 #endif
 
+#include <boost/progress.hpp>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -83,7 +85,7 @@ typedef vmml::vector< 3, float >      Normal;
 typedef vmml::matrix< 4, 4, float >   Matrix4f;
 typedef vmml::vector< 4, float >      Vector4f;
 typedef size_t                        Index;
-typedef GLushort                      ShortIndex;
+typedef unsigned short                ShortIndex;
 
 // mesh exception
 struct MeshException : public std::exception
@@ -99,7 +101,9 @@ private:
 template< class T, size_t d > struct ArrayWrapper
 {
     ArrayWrapper() {}
-    ArrayWrapper( const T* from ) { memcpy( data, from, sizeof( data )); }
+    explicit ArrayWrapper( const T* from )
+        { memcpy( data, from, sizeof( data )); }
+
     T& operator[]( const size_t i )
         {
             PLYLIBASSERT( i < d );

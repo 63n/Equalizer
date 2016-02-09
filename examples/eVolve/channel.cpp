@@ -267,7 +267,7 @@ void Channel::_orderFrames( eq::Frames& frames )
     const eq::Matrix4f& modelView = useOrtho() ? eq::Matrix4f::IDENTITY :
                                                  _computeModelView();
 
-    //calculate modelview inversed transposed matrix
+    // calculate modelview inversed+transposed matrix
     eq::Matrix3f modelviewITM;
     eq::Matrix4f modelviewIM;
     modelView.inverse( modelviewIM );
@@ -359,8 +359,7 @@ void Channel::frameAssemble( const eq::uint128_t&, const eq::Frames& frames )
     // blend DB frames in order
     try
     {
-        eq::Compositor::assembleFramesSorted( dbFrames, this, 0,
-                                              true /*blendAlpha*/ );
+        eq::Compositor::blendFrames( dbFrames, this, 0 );
     }
     catch( const co::Exception& e )
     {
@@ -459,14 +458,7 @@ void Channel::_drawHelp()
     if( !frameData.showHelp() && message.empty( ))
         return;
 
-    applyBuffer();
-    applyViewport();
-    setupAssemblyState();
-
-    glDisable( GL_LIGHTING );
-    glDisable( GL_DEPTH_TEST );
-
-    glColor3f( 1.f, 1.f, 1.f );
+    applyOverlayState();
 
     if( frameData.showHelp( ))
     {
@@ -517,6 +509,6 @@ void Channel::_drawHelp()
         font->draw( message );
     }
 
-    EQ_GL_CALL( resetAssemblyState( ));
+    resetOverlayState();
 }
 }

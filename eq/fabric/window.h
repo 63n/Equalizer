@@ -117,7 +117,7 @@ namespace fabric
 
         /** @name Attributes */
         //@{
-        /** Set the settings of this window. @version 1.8.0 */
+        /** Set the settings of this window. @version 1.9 */
         EQFABRIC_INL void setSettings( const Settings& settings );
 
         /** @return the settings of this window. @version 1.7.2 */
@@ -153,7 +153,7 @@ namespace fabric
 
     protected:
         /** @internal Construct a new window. */
-        Window( P* parent );
+        explicit Window( P* parent );
 
         EQFABRIC_INL virtual ~Window(); //!< @internal
         /** @internal */

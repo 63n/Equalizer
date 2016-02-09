@@ -1,6 +1,7 @@
 
-/* Copyright (c) 2009-2014, Stefan Eilemann <eile@equalizergraphics.com>
- *                    2010, Cedric Stalder <cedric.stalder@gmail.com>
+/* Copyright (c) 2009-2015, Stefan Eilemann <eile@equalizergraphics.com>
+ *                          Cedric Stalder <cedric.stalder@gmail.com>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -19,9 +20,8 @@
 #ifndef EQUTIL_TEXTURE_H
 #define EQUTIL_TEXTURE_H
 
-#include <eq/client/frame.h>        // Frame::Buffer enum
-
-#include <lunchbox/thread.h>         // thread debug macro
+#include <eq/frame.h> // Frame::Buffer enum
+#include <lunchbox/thread.h> // thread debug macro
 
 namespace eq
 {
@@ -35,7 +35,7 @@ namespace detail { class Texture; }
  * So far used by the Image and Compositor. The target is assumed to be
  * GL_TEXTURE_RECTANGLE_ARB or GL_TEXTURE_2D.
  */
-class Texture : public boost::noncopyable
+class Texture
 {
 public:
     /**
@@ -125,9 +125,9 @@ public:
     EQ_API void flush();
 
     /** @internal Apply the given texture filtering parameter. */
-    void applyZoomFilter( const ZoomFilter filter ) const;
+    EQ_API void applyZoomFilter( const ZoomFilter filter ) const;
 
-    void applyWrap() const; //<! @internal
+    EQ_API void applyWrap() const; //<! @internal
 
     /**
      * Copy the specified area from the current read buffer to the
@@ -152,7 +152,7 @@ public:
 
     /** Create and bind a texture to the current FBO. @version 1.0 */
     EQ_API void bindToFBO( const unsigned target, const int32_t width,
-                           const int32_t height );
+                           const int32_t height, const int32_t samples = 1 );
 
     /** Resize the texture. @version 1.0 */
     EQ_API void resize( const int32_t width, const int32_t height );
@@ -190,6 +190,8 @@ public:
     //@}
 
 private:
+    Texture( const Texture& ) = delete;
+    Texture& operator=( const Texture& ) = delete;
     detail::Texture* const _impl;
 
     /**

@@ -27,7 +27,7 @@
  */
 
 
-#ifdef EQUALIZER_USE_QT4
+#ifdef EQUALIZER_USE_QT5WIDGETS
 #  include <QApplication>
 #endif
 
@@ -70,13 +70,13 @@ int main( int argc, char** argv )
     eqPly::LocalInitData initData;
     initData.parseArguments( argc, argv );
 
-#ifdef EQUALIZER_USE_QT4
+#ifdef EQUALIZER_USE_QT5WIDGETS
     QApplication* app = 0;
     if( initData.getWindowSystem() == "Qt" )
     {
-    #ifdef GLX
+#  ifdef __linux__
         ::XInitThreads();
-    #endif
+#  endif
         app = new QApplication( argc, argv );
     }
 #endif
@@ -90,6 +90,11 @@ int main( int argc, char** argv )
 
     // 3. initialization of local client node
     lunchbox::RefPtr< eqPly::EqPly > client = new eqPly::EqPly( initData );
+#ifdef EQUALIZER_USE_QT5WIDGETS
+    // no working multi GPU setup for Qt yet...
+    if( initData.getWindowSystem() == "Qt" )
+        client->addActiveLayout( "Simple" );
+#endif
     if( !client->initLocal( argc, argv ))
     {
         LBERROR << "Can't init client" << std::endl;
@@ -106,7 +111,7 @@ int main( int argc, char** argv )
     LBASSERTINFO( client->getRefCount() == 1, client );
     client = 0;
 
-#ifdef EQUALIZER_USE_QT4
+#ifdef EQUALIZER_USE_QT5WIDGETS
     delete app;
 #endif
 

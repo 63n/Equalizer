@@ -17,7 +17,7 @@
 
 #include "accumBufferObject.h"
 
-#include <eq/client/gl.h>
+#include <eq/gl.h>
 
 namespace eq
 {
@@ -48,6 +48,7 @@ bool AccumBufferObject::init( const PixelViewport& pvp,
                                                  GL_RGBA32F, 0, 0 );
     if( error )
     {
+        LBDEBUG << "FrameBufferObject init failed: " << error << std::endl;
         exit();
         return false;
     }
@@ -96,13 +97,13 @@ void AccumBufferObject::accum( const GLfloat value )
 
     const PixelViewport pvp( 0, 0, getWidth(), getHeight( ));
     _setup( pvp );
-    glEnable( GL_BLEND );
-    glBlendFunc( GL_ONE, GL_ONE );
+    EQ_GL_CALL( glEnable( GL_BLEND ));
+    EQ_GL_CALL( glBlendFunc( GL_ONE, GL_ONE ));
 
     _drawQuadWithTexture( _texture, pvp, value );
 
-    glBlendFunc( GL_ONE, GL_ZERO );
-    glDisable( GL_BLEND );
+    EQ_GL_CALL( glBlendFunc( GL_ONE, GL_ZERO ));
+    EQ_GL_CALL( glDisable( GL_BLEND ));
     _reset();
 }
 
@@ -148,14 +149,14 @@ void AccumBufferObject::_drawQuadWithTexture( Texture* texture,
 {
     texture->bind();
 
-    glDepthMask( false );
-    glDisable( GL_LIGHTING );
-    glEnable( GL_TEXTURE_RECTANGLE_ARB );
-    glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    EQ_GL_CALL( glDepthMask( false ));
+    EQ_GL_CALL( glDisable( GL_LIGHTING ));
+    EQ_GL_CALL( glEnable( GL_TEXTURE_RECTANGLE_ARB ));
+    EQ_GL_CALL( glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE ));
     texture->applyWrap();
     texture->applyZoomFilter( FILTER_NEAREST );
 
-    glColor4f( value, value, value, value );
+    EQ_GL_CALL( glColor4f( value, value, value, value ));
 
     const float startX = static_cast< float >( pvp.x );
     const float endX   = static_cast< float >( pvp.x + pvp.w );
@@ -177,8 +178,8 @@ void AccumBufferObject::_drawQuadWithTexture( Texture* texture,
     glEnd();
 
     // restore state
-    glDisable( GL_TEXTURE_RECTANGLE_ARB );
-    glDepthMask( true );
+    EQ_GL_CALL( glDisable( GL_TEXTURE_RECTANGLE_ARB ));
+    EQ_GL_CALL( glDepthMask( true ));
 }
 
 }

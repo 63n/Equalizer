@@ -18,8 +18,8 @@
 #ifndef EQUTIL_TYPES_H
 #define EQUTIL_TYPES_H
 
-#include <eq/client/types.h>
-#include <eq/client/error.h>
+#include <eq/types.h>
+#include <eq/error.h>
 #include <vector>
 
 namespace eq
@@ -35,12 +35,10 @@ class Texture;
 class BitmapFont;
 class ObjectManager;
 
+namespace shader {}
+
 /** A vector of pointers to eq::util::Texture */
 typedef std::vector< Texture* >  Textures;
-
-#ifdef EQ_USE_DEPRECATED
-typedef Textures TextureVector;
-#endif
 }
 }
 #endif // EQUTIL_TYPES_H

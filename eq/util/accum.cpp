@@ -19,7 +19,7 @@
 #include "accumBufferObject.h"
 #include "accum.h"
 
-#include <eq/client/gl.h>
+#include <eq/gl.h>
 
 namespace eq
 {
@@ -30,7 +30,7 @@ namespace detail
 class Accum
 {
 public:
-    Accum( const GLEWContext* const gl )
+    explicit Accum( const GLEWContext* const gl )
         : glewContext( gl )
         , abo( 0 )
         , numSteps( 0 )
@@ -167,7 +167,6 @@ uint32_t Accum::getMaxSteps() const
 
     GLint accumBits;
     glGetIntegerv( GL_ACCUM_RED_BITS, &accumBits );
-
     return accumBits >= 16 ? 256 : 0;
 }
 
@@ -216,4 +215,3 @@ bool Accum::usesFBO( const GLEWContext* glewContext )
 
 }
 }
-

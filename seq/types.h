@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -19,16 +19,19 @@
 #define EQSEQUEL_TYPES_H
 
 #include <seq/api.h>
-#include <eq/client/types.h>
+#include <eq/types.h>
 
 namespace seq
 {
 using eq::Frustumf;
 using eq::Matrix4f;
+using eq::PixelViewport;
 using eq::Vector3f;
 using eq::Vector4f;
 using eq::uint128_t;
 using eq::fabric::RenderContext;
+using eq::util::ObjectManager;
+using namespace eq::util::shader;
 
 class Application;
 class ObjectFactory;

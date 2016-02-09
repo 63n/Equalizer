@@ -96,7 +96,7 @@ void Frame::commitData()
         if( _frameData[i] )
         {
             if( _frameData[i] != _masterFrameData )
-                _frameData[i]->_data = _masterFrameData->_data;
+                _frameData[i]->fabric::FrameData::operator =(*_masterFrameData);
 
             _frameData[i]->commit();
         }
@@ -106,7 +106,7 @@ void Frame::commitData()
 uint128_t Frame::commit( const uint32_t incarnation )
 {
     for( unsigned i = 0; i < NUM_EYES; ++i )
-        _setDataVersion( i, _frameData[i] );
+        _setDataVersion( i, co::ObjectVersion( _frameData[i] ));
     return co::Object::commit( incarnation );
 }
 

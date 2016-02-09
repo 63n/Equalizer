@@ -1,7 +1,7 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.h>
- *               2012-2014, Daniel Nachbaur <danielnachbaur@gmail.com>
- *                    2013, Julio Delgado Mangas <julio.delgadomangas@epfl.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.h>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Julio Delgado Mangas <julio.delgadomangas@epfl.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -36,23 +36,29 @@
 #include <hwsd/gpuInfo.h>
 #include <hwsd/netInfo.h>
 #include <hwsd/hwsd.h>
-#ifdef EQUALIZER_USE_HWSD_gpu_cgl
+#ifdef EQUALIZER_USE_hwsd_gpu_cgl
 #  include <hwsd/gpu/cgl/module.h>
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_glx
+#ifdef EQUALIZER_USE_hwsd_gpu_glx
 #  include <hwsd/gpu/glx/module.h>
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_wgl
+#ifdef EQUALIZER_USE_hwsd_gpu_wgl
 #  include <hwsd/gpu/wgl/module.h>
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_dns_sd
+#ifdef EQUALIZER_USE_hwsd_gpu_dns_sd
 #  include <hwsd/gpu/dns_sd/module.h>
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_sys
+#ifdef EQUALIZER_USE_hwsd_net_sys
 #  include <hwsd/net/sys/module.h>
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_dns_sd
+#ifdef EQUALIZER_USE_hwsd_net_dns_sd
 #  include <hwsd/net/dns_sd/module.h>
+#endif
+
+#ifdef _MSC_VER
+#  include <eq/os.h>
+#  define setenv( name, value, overwrite ) \
+    _putenv_s( name, value )
 #endif
 
 #define USE_IPv4
@@ -154,42 +160,42 @@ hwsd::NetInfos _discoverNetworks( const fabric::ConfigParams& params,
 
 void _configureHwsdModules()
 {
-#ifdef EQUALIZER_USE_HWSD_gpu_cgl
+#ifdef EQUALIZER_USE_hwsd_gpu_cgl
     hwsd::gpu::cgl::Module::use();
-#elif defined(EQUALIZER_USE_HWSD_gpu_glx)
+#elif defined(EQUALIZER_USE_hwsd_gpu_glx)
     hwsd::gpu::glx::Module::use();
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_wgl
+#ifdef EQUALIZER_USE_hwsd_gpu_wgl
     hwsd::gpu::wgl::Module::use();
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_dns_sd
+#ifdef EQUALIZER_USE_hwsd_gpu_dns_sd
     hwsd::gpu::dns_sd::Module::use();
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_sys
+#ifdef EQUALIZER_USE_hwsd_net_sys
     hwsd::net::sys::Module::use();
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_dns_sd
+#ifdef EQUALIZER_USE_hwsd_net_dns_sd
     hwsd::net::dns_sd::Module::use();
 #endif
 }
 
 void _disposeHwsdModules()
 {
-#ifdef EQUALIZER_USE_HWSD_gpu_cgl
+#ifdef EQUALIZER_USE_hwsd_gpu_cgl
     hwsd::gpu::cgl::Module::dispose();
-#elif defined(EQUALIZER_USE_HWSD_gpu_glx)
+#elif defined(EQUALIZER_USE_hwsd_gpu_glx)
     hwsd::gpu::glx::Module::dispose();
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_wgl
+#ifdef EQUALIZER_USE_hwsd_gpu_wgl
     hwsd::gpu::wgl::Module::dispose();
 #endif
-#ifdef EQUALIZER_USE_HWSD_gpu_dns_sd
+#ifdef EQUALIZER_USE_hwsd_gpu_dns_sd
     hwsd::gpu::dns_sd::Module::dispose();
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_sys
+#ifdef EQUALIZER_USE_hwsd_net_sys
     hwsd::net::sys::Module::dispose();
 #endif
-#ifdef EQUALIZER_USE_HWSD_net_dns_sd
+#ifdef EQUALIZER_USE_hwsd_net_dns_sd
     hwsd::net::dns_sd::Module::dispose();
 #endif
 }
@@ -309,19 +315,23 @@ bool Resources::discover( ServerPtr server, Config* config,
         std::stringstream name;
         if( info.device == LB_UNDEFINED_UINT32 &&
             // VirtualGL display redirects to local GPU (see continue above)
-            !(info.flags & hwsd::GPUInfo::FLAG_VIRTUALGL) )
+            !(info.flags & hwsd::GPUInfo::FLAG_VIRTUALGL ))
         {
             name << "display";
         }
         else
         {
             name << "GPU" << ++gpuCounter;
-            if( info.flags & hwsd::GPUInfo::FLAG_VIRTUALGL &&
+            if( // When running under VirtualGL, GPUs that are not VNC virtual
+                // devices mustn't be interposed.
+                ( info.flags & ( hwsd::GPUInfo::FLAG_VIRTUALGL |
+                                 hwsd::GPUInfo::FLAG_VNC )) ==
+                    hwsd::GPUInfo::FLAG_VIRTUALGL &&
                 info.device != LB_UNDEFINED_UINT32 )
             {
                 std::ostringstream displayString;
                 displayString << ":" << info.port << "." << info.device;
-                excludedDisplays += displayString.str() + ";";
+                excludedDisplays += displayString.str() + ",";
             }
         }
 
@@ -404,7 +414,7 @@ namespace
 class AddSourcesVisitor : public ConfigVisitor
 {
 public:
-    AddSourcesVisitor( const PixelViewport& pvp ) : _pvp( pvp ) {}
+    explicit AddSourcesVisitor( const PixelViewport& pvp ) : _pvp( pvp ) {}
 
     virtual VisitorResult visitPre( Pipe* pipe )
     {
@@ -420,7 +430,8 @@ public:
         Window* window = new Window( pipe );
         if( !pipe->getPixelViewport().isValid( ))
             window->setPixelViewport( _pvp );
-        window->setIAttribute( WindowSettings::IATTR_HINT_DRAWABLE, fabric::FBO );
+        window->setIAttribute( WindowSettings::IATTR_HINT_DRAWABLE,
+                               fabric::FBO );
         window->setName( pipe->getName() + " source window" );
 
         _channels.push_back( new Channel( window ));
@@ -808,7 +819,8 @@ Compound* Resources::_addDB2DCompound( Compound* root, const Channels& channels,
         drawChild->addEqualizer( new LoadEqualizer( params.getEqualizer( )));
         drawChild->setName( EQ_SERVER_CONFIG_LAYOUT_2D_DYNAMIC );
 
-        const Channels& localChannels = _filterLocalChannels( channels, child );
+        const Channels& localChannels = _filterLocalChannels( channels,
+                                                              *child );
         _fill2DCompound( drawChild, localChannels );
     }
 

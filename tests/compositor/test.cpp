@@ -17,12 +17,12 @@
 
 #include <test.h>
 
-#include <eq/client/compositor.h>
-#include <eq/client/frame.h>
-#include <eq/client/frameData.h>
-#include <eq/client/image.h>
-#include <eq/client/init.h>
-#include <eq/client/nodeFactory.h>
+#include <eq/compositor.h>
+#include <eq/frame.h>
+#include <eq/frameData.h>
+#include <eq/image.h>
+#include <eq/init.h>
+#include <eq/nodeFactory.h>
 #include <eq/fabric/drawableConfig.h>
 #include <lunchbox/clock.h>
 
@@ -89,9 +89,6 @@ int main( int, char **argv )
          << 5000.0f * size / time / 1024.0f / 1024.0f << " MB/s)" << std::endl;
 
     // 2) DB assembly test
-#ifdef EQ_USE_PARACOMP_DEPTH
-    std::cout << "Using Paracomp PC compositing (depth)" << std::endl;
-#endif
     const eq::Images& images = frameData->getImages();
 
     image = images[0];
@@ -147,9 +144,6 @@ int main( int, char **argv )
               << std::endl;
 
     // 3) alpha-blend assembly test
-#ifdef EQ_USE_PARACOMP_BLEND
-     std::cout << "Using Paracomp PC compositing (blend)" << std::endl;
-#endif
     frameData->clear();
     frameData->setBuffers( eq::Frame::BUFFER_COLOR );
 

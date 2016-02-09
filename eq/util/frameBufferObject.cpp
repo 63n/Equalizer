@@ -1,6 +1,7 @@
 
-/* Copyright (c) 2008-2009, Cedric Stalder <cedric.stalder@gmail.com>
- *               2009-2013, Stefan Eilemann <eile@equalizergraphics.com>
+/* Copyright (c) 2008-2015, Cedric Stalder <cedric.stalder@gmail.com>
+ *                          Stefan Eilemann <eile@equalizergraphics.com>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -18,7 +19,7 @@
 
 #include "frameBufferObject.h"
 
-#include <eq/client/gl.h>
+#include <eq/gl.h>
 #include <eq/fabric/pixelViewport.h>
 
 #ifdef _WIN32
@@ -67,43 +68,86 @@ bool FrameBufferObject::addColorTexture()
 Error FrameBufferObject::init( const int32_t width, const int32_t height,
                                const GLuint colorFormat,
                                const int32_t depthSize,
-                               const int32_t stencilSize )
+                               const int32_t stencilSize,
+                               const int32_t samplesSize )
 {
     LB_TS_THREAD( _thread );
 
     // Check for frame dimensions
     GLint maxViewportDims[2];
-    glGetIntegerv( GL_MAX_VIEWPORT_DIMS, &maxViewportDims[0] );
+    EQ_GL_CALL( glGetIntegerv( GL_MAX_VIEWPORT_DIMS, &maxViewportDims[0] ));
     if( width > maxViewportDims[0] || height > maxViewportDims[1] )
         return Error( ERROR_FRAMEBUFFER_INVALID_SIZE );
+
+    // Check for MAX_SAMPLES
+    GLint maxSamples;
+    glGetIntegerv( GL_MAX_SAMPLES, &maxSamples );
+    if( samplesSize < 0 || samplesSize > maxSamples )
+        return Error( ERROR_FRAMEBUFFER_INVALID_SAMPLES );
 
     if( _fboID )
         return Error( ERROR_FRAMEBUFFER_INITIALIZED );
 
     // generate and bind the framebuffer
-    glGenFramebuffersEXT( 1, &_fboID );
-    glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _fboID );
+    EQ_GL_CALL( glGenFramebuffersEXT( 1, &_fboID ));
+    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _fboID ));
+
+    GLint mask;
+    glGetIntegerv( GL_CONTEXT_PROFILE_MASK, &mask );
+    const GLenum glError = glGetError(); // might get GL_INVALID_ENUM
+    const bool coreContext =
+        glError ? false : mask & GL_CONTEXT_CORE_PROFILE_BIT;
 
     // create and bind textures
     for( unsigned i = 0; i < _colors.size(); ++i )
     {
         _colors[i]->init( colorFormat, width, height );
-        _colors[i]->bindToFBO( GL_COLOR_ATTACHMENT0 + i, width, height );
+        _colors[i]->bindToFBO( GL_COLOR_ATTACHMENT0 + i, width, height,
+                               samplesSize );
+        const Error error = _checkStatus();
+        if( error )
+        {
+            LBDEBUG << "FrameBufferObject::init: " << error << " when binding "
+                    << _colors.size() << " color texture(s) of format 0x"
+                    << std::hex << colorFormat << std::endl;
+            exit();
+            return error;
+        }
     }
-    if( stencilSize > 0 && GLEW_EXT_packed_depth_stencil )
+    if( stencilSize > 0 && ( GLEW_EXT_packed_depth_stencil || coreContext ))
     {
         _depth.init( GL_DEPTH24_STENCIL8, width, height );
-        _depth.bindToFBO( GL_DEPTH_STENCIL_ATTACHMENT, width, height );
+        _depth.bindToFBO( GL_DEPTH_STENCIL_ATTACHMENT, width, height,
+                          samplesSize );
+        const Error error = _checkStatus();
+        if( error )
+        {
+            LBDEBUG << "FrameBufferObject::init: " << error
+                    << " when binding GL_DEPTH24_STENCIL8 texture" << std::endl;
+            exit();
+            return error;
+        }
     }
     else if( depthSize > 0 )
     {
         _depth.init( GL_DEPTH_COMPONENT, width, height );
-        _depth.bindToFBO( GL_DEPTH_ATTACHMENT, width, height );
+        _depth.bindToFBO( GL_DEPTH_ATTACHMENT, width, height, samplesSize );
+        const Error error = _checkStatus();
+        if( error )
+        {
+            LBDEBUG << "FrameBufferObject::init: " << error
+                    << " when binding GL_DEPTH_COMPONENT texture" << std::endl;
+            exit();
+            return error;
+        }
     }
 
     const Error error = _checkStatus();
     if( error )
+    {
+        LBDEBUG << "FrameBufferObject::init: " << error << std::endl;
         exit();
+    }
     return error;
 }
 
@@ -167,16 +211,16 @@ Error FrameBufferObject::_checkStatus()
     }
 }
 
-void FrameBufferObject::bind()
+void FrameBufferObject::bind( const uint32_t target )
 {
     LB_TS_THREAD( _thread );
     LBASSERT( _fboID );
-    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _fboID ));
+    EQ_GL_CALL( glBindFramebufferEXT( target, _fboID ));
 }
 
-void FrameBufferObject::unbind()
+void FrameBufferObject::unbind( const uint32_t target )
 {
-    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 ));
+    EQ_GL_CALL( glBindFramebufferEXT( target, 0 ));
 }
 
 Error FrameBufferObject::resize( const int32_t width, const int32_t height )

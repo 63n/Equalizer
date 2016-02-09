@@ -1,9 +1,9 @@
-# Copyright (c) 2010 Daniel Pfeifer <daniel@pfeifer-mail.de>
-#               2011-2013 Stefan Eilemann <eile@eyescale.ch>
-#               2012 Daniel Nachbaur <danielnachbaur@gmail.com>
+# Copyright (c) 2010-2015 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#                         Stefan Eilemann <eile@eyescale.ch>
+#                         Daniel Nachbaur <danielnachbaur@gmail.com>
 
-find_package(BISON REQUIRED)
-find_package(FLEX  REQUIRED)
+common_package(BISON REQUIRED)
+common_package(FLEX  REQUIRED)
 
 bison_target(PARSER loader.y ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp
   COMPILE_FLAGS "-l -p eqLoader_")
@@ -15,19 +15,15 @@ list(APPEND CPPCHECK_EXTRA_ARGS
   --suppress=*:${CMAKE_CURRENT_BINARY_DIR}/parser.cpp
   --suppress=*:${CMAKE_CURRENT_SOURCE_DIR}/loader.l)
 
-if(CPCHECK_VERSION VERSION_LESS 1.68)
+if(CPPCHECK_VERSION VERSION_LESS 1.68)
   list(APPEND CPPCHECK_EXTRA_ARGS --suppress=operatorEqVarError:
     ${CMAKE_CURRENT_SOURCE_DIR}/equalizers/equalizer.cpp)
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-add_subdirectory(equalizers)
-
 add_definitions(-DYY_NEVER_INTERACTIVE)
 
-set(HEADERS
-    api.h
+set(PUBLIC_HEADERS
     canvas.h
     channel.h
     channelListener.h
@@ -37,6 +33,10 @@ set(HEADERS
     config.h
     configVisitor.h
     connectionDescription.h
+    equalizers/equalizer.h
+    equalizers/loadEqualizer.h
+    equalizers/tileEqualizer.h
+    equalizers/viewEqualizer.h
     frame.h
     frameData.h
     frustum.h
@@ -60,45 +60,51 @@ set(HEADERS
     window.h
 )
 
-set(SOURCES
-    ${BISON_PARSER_OUTPUTS}
-    ${FLEX_LEXER_OUTPUTS}
-    canvas.cpp
+set(EQUALIZERSERVER_HEADERS
     changeLatencyVisitor.h
     channel.cpp
     channelListener.h
     channelStopFrameVisitor.h
-    channelUpdateVisitor.cpp
     channelUpdateVisitor.h
     colorMask.h
-    compound.cpp
     compoundActivateVisitor.h
     compoundExitVisitor.h
-    compoundInitVisitor.cpp
     compoundInitVisitor.h
     compoundListener.h
-    compoundUpdateDataVisitor.cpp
     compoundUpdateDataVisitor.h
-    compoundUpdateInputVisitor.cpp
     compoundUpdateInputVisitor.h
-    compoundUpdateOutputVisitor.cpp
     compoundUpdateOutputVisitor.h
     compoundVisitor.h
-    config.cpp
     configBackupVisitor.h
     configDeregistrator.h
     configDestCompoundVisitor.h
     configRegistrator.h
     configRestoreVisitor.h
     configUnmapVisitor.h
-    configUpdateDataVisitor.cpp
     configUpdateDataVisitor.h
     configUpdateSyncVisitor.h
     configUpdateVisitor.h
     configVisitor.h
-    connectionDescription.cpp
     convert11Visitor.h
     convert12Visitor.h
+    nodeFactory.h
+    nodeFailedVisitor.h
+)
+
+set(EQUALIZERSERVER_SOURCES
+    ${BISON_PARSER_OUTPUTS}
+    ${FLEX_LEXER_OUTPUTS}
+    canvas.cpp
+    channel.cpp
+    channelUpdateVisitor.cpp
+    compound.cpp
+    compoundInitVisitor.cpp
+    compoundUpdateDataVisitor.cpp
+    compoundUpdateInputVisitor.cpp
+    compoundUpdateOutputVisitor.cpp
+    config.cpp
+    configUpdateDataVisitor.cpp
+    connectionDescription.cpp
     equalizers/dfrEqualizer.cpp
     equalizers/equalizer.cpp
     equalizers/framerateEqualizer.cpp
@@ -120,8 +126,6 @@ set(SOURCES
     localServer.cpp
     node.cpp
     nodeFactory.cpp
-    nodeFactory.h
-    nodeFailedVisitor.h
     observer.cpp
     pipe.cpp
     segment.cpp
@@ -131,46 +135,40 @@ set(SOURCES
     window.cpp
 )
 
-set(AUTOCONFIG
-    config/display.h
-    config/display.cpp
-    config/resources.h
-    config/resources.cpp
-    config/server.h
-    config/server.cpp
-)
+if(EQUALIZER_INSTALL_SERVER_HEADERS)
+  set(EQUALIZERSERVER_PUBLIC_HEADERS ${PUBLIC_HEADERS})
+else()
+  list(APPEND EQUALIZERSERVER_HEADERS ${PUBLIC_HEADERS})
+endif()
 
-set(SERVER_LIBRARIES EqualizerFabric)
+set(EQUALIZERSERVER_LINK_LIBRARIES PUBLIC EqualizerFabric)
 if(HWSD_FOUND)
-  list(APPEND SOURCES ${AUTOCONFIG})
-  list(APPEND SERVER_LIBRARIES ${HWSD_LIBRARIES})
-  foreach(HWSD_COMPONENT ${HWSD_COMPONENTS})
-    add_definitions(-DEQUALIZER_USE_HWSD_${HWSD_COMPONENT})
+  list(APPEND EQUALIZERSERVER_HEADERS
+    config/display.h config/resources.h config/server.h)
+  list(APPEND EQUALIZERSERVER_SOURCES
+    config/display.cpp config/resources.cpp config/server.cpp)
+
+  set(_hwsd_components hwsd_net_sys)
+  if(SERVUS_USE_DNSSD OR SERVUS_USE_AVAHI_CLIENT)
+    list(APPEND _hwsd_components hwsd_gpu_dns_sd hwsd_net_dns_sd)
+  endif()
+  if(EQ_GLX_USED)
+    list(APPEND _hwsd_components hwsd_gpu_glx)
+  elseif(EQ_AGL_USED)
+    list(APPEND _hwsd_components hwsd_gpu_cgl)
+  elseif(EQ_WGL_USED)
+    list(APPEND _hwsd_components hwsd_gpu_wgl)
+  endif()
+
+  list(APPEND EQUALIZERSERVER_LINK_LIBRARIES PRIVATE ${_hwsd_components})
+  foreach(_component ${_hwsd_components})
+    add_definitions(-DEQUALIZER_USE_${_component})
   endforeach()
 endif()
 
-list(SORT HEADERS)
-list(SORT SOURCES)
+set(EQUALIZERSERVER_INCLUDE_NAME eq/server)
+set(EQUALIZERSERVER_NAMESPACE eqserver)
+set(EQUALIZERSERVER_OMIT_LIBRARY_HEADER ON)
 
-add_library(EqualizerServer SHARED ${HEADERS} ${SOURCES})
-target_link_libraries(EqualizerServer ${SERVER_LIBRARIES})
-set_target_properties(EqualizerServer
-  PROPERTIES VERSION ${VERSION} SOVERSION ${VERSION_ABI})
-
-if(MSVC)
-  install(FILES ${CMAKE_BINARY_DIR}/bin/Debug/EqualizerServer.pdb
-    DESTINATION bin COMPONENT dev CONFIGURATIONS Debug)
-  install(FILES ${CMAKE_BINARY_DIR}/bin/RelWithDebInfo/EqualizerServer.pdb
-    DESTINATION bin COMPONENT dev CONFIGURATIONS RelWithDebInfo)
-endif()
-
-install(TARGETS EqualizerServer
-        ARCHIVE DESTINATION lib COMPONENT dev
-        RUNTIME DESTINATION bin COMPONENT lib
-        LIBRARY DESTINATION lib COMPONENT lib)
-if(EQUALIZER_INSTALL_SERVER_HEADERS)
-  install(FILES ${HEADERS} DESTINATION include/eq/server COMPONENT dev)
-endif()
-
-source_group(equalizers REGULAR_EXPRESSION equalizers.*)
-source_group(\\ FILES CMakeLists.txt ${HEADERS} ${SOURCES})
+common_library(EqualizerServer)
+target_compile_definitions(EqualizerServer PRIVATE EQUALIZERFABRIC_SHARED_INL)

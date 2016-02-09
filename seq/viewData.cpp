@@ -1,6 +1,7 @@
 
-/* Copyright (c) 2011-2014, Stefan Eilemann <eile@eyescale.ch>
- *                    2012, Daniel Nachbaur <danielnachbaur@gmail.com>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Petros Kataras <petroskataras@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -19,10 +20,10 @@
 #include "viewData.h"
 
 #ifndef EQ_2_0_API
-#  include <eq/client/configEvent.h>
+#  include <eq/configEvent.h>
 #endif
 #include <eq/fabric/event.h>
-#include <eq/client/eventICommand.h>
+#include <eq/eventICommand.h>
 #include <co/dataIStream.h>
 #include <co/dataOStream.h>
 

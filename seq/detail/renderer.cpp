@@ -1,5 +1,7 @@
 
-/* Copyright (c) 2011-2013, Stefan Eilemann <eile@eyescale.ch>
+/* Copyright (c) 2011-2015, Stefan Eilemann <eile@eyescale.ch>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
+ *                          Petros Kataras <petroskataras@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -20,6 +22,7 @@
 #include "channel.h"
 #include "pipe.h"
 #include "window.h"
+#include "objectMap.h"
 
 #include <seq/renderer.h>
 
@@ -30,10 +33,10 @@ namespace detail
 static const RenderContext dummyContext;
 
 Renderer::Renderer()
-        : _glewContext( 0 )
-        , _pipe( 0 )
-        , _window( 0 )
-        , _channel( 0 )
+    : _glewContext( 0 )
+    , _pipe( 0 )
+    , _window( 0 )
+    , _channel( 0 )
 {}
 
 Renderer::~Renderer()
@@ -42,9 +45,38 @@ Renderer::~Renderer()
     LBASSERT( !_channel );
 }
 
+co::Object* Renderer::mapObject( const uint128_t& identifier,
+                                 co::Object* instance )
+{
+    if( !_pipe )
+        return 0;
+
+    seq::detail::ObjectMap* objectMap = _pipe->getObjectMap();
+    return objectMap ? objectMap->map(identifier, instance) : 0;
+}
+
+bool Renderer::unmap( co::Object* object )
+{
+    if( !_pipe )
+        return false;
+
+    seq::detail::ObjectMap* objectMap = _pipe->getObjectMap();
+    return objectMap ? objectMap->unmap(object) : false;
+}
+
 co::Object* Renderer::getFrameData()
 {
     return _pipe->getFrameData();
+}
+
+const ObjectManager& Renderer::getObjectManager() const
+{
+    return _window->getObjectManager();
+}
+
+ObjectManager& Renderer::getObjectManager()
+{
+    return _window->getObjectManager();
 }
 
 const Frustumf& Renderer::getFrustum() const
@@ -65,10 +97,31 @@ const Matrix4f& Renderer::getModelMatrix() const
     return _channel ? _channel->getModelMatrix() : Matrix4f::IDENTITY;
 }
 
+const PixelViewport& Renderer::getPixelViewport() const
+{
+    LBASSERT( _channel );
+    static const PixelViewport nullPVP;
+    return _channel ? _channel->getPixelViewport() : nullPVP;
+}
+
 bool Renderer::useOrtho() const
 {
     LBASSERT( _channel );
     return _channel ? _channel->useOrtho() : false;
+}
+
+void Renderer::applyScreenFrustum()
+{
+    LBASSERT( _channel );
+    if( _channel )
+        _channel->applyScreenFrustum();
+}
+
+void Renderer::applyPerspectiveFrustum()
+{
+    LBASSERT( _channel );
+    if( _channel )
+        _channel->applyPerspective();
 }
 
 void Renderer::setNearFar( const float nearPlane, const float farPlane )
